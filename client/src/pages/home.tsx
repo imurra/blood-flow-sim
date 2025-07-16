@@ -56,105 +56,92 @@ const BloodFlowSimulator = () => {
     let animationFrameId: number;
 
     const resizeCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
     };
 
-    // Add a small delay to ensure the canvas is properly mounted
-    setTimeout(() => {
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-      const createParticles = () => {
-        const particleCount = 200;
-        const particles = [];
-        for (let i = 0; i < particleCount; i++) {
-          particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            speed: 0,
-          });
-        }
-        return particles;
-      };
-      
-      particlesRef.current = createParticles();
-
-      const animate = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Only animate if canvas has proper dimensions
-        if (canvas.width === 0 || canvas.height === 0) {
-          animationFrameId = requestAnimationFrame(animate);
-          return;
-        }
-
-        const normalWidth = canvas.height * 0.4;
-        const restrictedWidth = normalWidth * (1 - constrictionPercent/100);
-        const restrictionPoint = canvas.width * 0.3;
-
-        // Draw vessel outline
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height/2 - normalWidth/2);
-        ctx.lineTo(restrictionPoint, canvas.height/2 - normalWidth/2);
-        ctx.lineTo(restrictionPoint, canvas.height/2 - restrictedWidth/2);
-        ctx.lineTo(canvas.width, canvas.height/2 - restrictedWidth/2);
-        ctx.lineTo(canvas.width, canvas.height/2 + restrictedWidth/2);
-        ctx.lineTo(restrictionPoint, canvas.height/2 + restrictedWidth/2);
-        ctx.lineTo(restrictionPoint, canvas.height/2 + normalWidth/2);
-        ctx.lineTo(0, canvas.height/2 + normalWidth/2);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(255, 240, 240, 0.5)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        const { upstream, downstream } = getAdjustedPressures(
-          upstreamPressure, 
-          downstreamPressure, 
-          constrictionPercent
-        );
-
-        const flowDirection = upstream >= downstream ? 1 : -1;
-
-        // Animate particles
-        particlesRef.current.forEach((particle) => {
-          const areaRatio = Math.pow(normalWidth/restrictedWidth, 2);
-          const velocityMultiplier = particle.x < restrictionPoint ? 1 : Math.min(areaRatio, 5);
-          const distanceFromCenter = Math.abs(particle.y - canvas.height/2);
-          const currentWidth = particle.x < restrictionPoint ? normalWidth : restrictedWidth;
-          const normalizedDistance = distanceFromCenter / (currentWidth/2);
-          const laminarProfile = Math.max(0, 1 - Math.pow(normalizedDistance, 2));
-          const baseSpeed = Math.max(Math.abs(flow)/5000, 0.1);
-
-          particle.speed = baseSpeed * velocityMultiplier * flowDirection * laminarProfile;
-
-          if (distanceFromCenter <= currentWidth/2) {
-            ctx.beginPath();
-            ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
-            ctx.fillStyle = 'red';
-            ctx.fill();
-
-            particle.x += particle.speed;
-
-            if ((flowDirection > 0 && particle.x > canvas.width) || 
-                (flowDirection < 0 && particle.x < 0)) {
-              particle.x = flowDirection > 0 ? 0 : canvas.width;
-              particle.y = Math.random() * currentWidth + (canvas.height/2 - currentWidth/2);
-            }
-          } else {
-            particle.x = flowDirection > 0 ? 0 : canvas.width;
-            particle.y = Math.random() * normalWidth + (canvas.height/2 - normalWidth/2);
-          }
+    const createParticles = () => {
+      const particleCount = 200;
+      const particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          speed: 0,
         });
+      }
+      return particles;
+    };
+    
+    particlesRef.current = createParticles();
 
-        animationFrameId = requestAnimationFrame(animate);
-      };
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      animate();
-    }, 100);
+      const normalWidth = canvas.height * 0.4;
+      const restrictedWidth = normalWidth * (1 - constrictionPercent/100);
+      const restrictionPoint = canvas.width * 0.3;
+
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height/2 - normalWidth/2);
+      ctx.lineTo(restrictionPoint, canvas.height/2 - normalWidth/2);
+      ctx.lineTo(restrictionPoint, canvas.height/2 - restrictedWidth/2);
+      ctx.lineTo(canvas.width, canvas.height/2 - restrictedWidth/2);
+      ctx.lineTo(canvas.width, canvas.height/2 + restrictedWidth/2);
+      ctx.lineTo(restrictionPoint, canvas.height/2 + restrictedWidth/2);
+      ctx.lineTo(restrictionPoint, canvas.height/2 + normalWidth/2);
+      ctx.lineTo(0, canvas.height/2 + normalWidth/2);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 240, 240, 0.5)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.stroke();
+
+      const { upstream, downstream } = getAdjustedPressures(
+        upstreamPressure, 
+        downstreamPressure, 
+        constrictionPercent
+      );
+
+      const flowDirection = upstream >= downstream ? 1 : -1;
+
+      particlesRef.current.forEach((particle) => {
+        const areaRatio = Math.pow(normalWidth/restrictedWidth, 2);
+        const velocityMultiplier = particle.x < restrictionPoint ? 1 : Math.min(areaRatio, 5);
+        const distanceFromCenter = Math.abs(particle.y - canvas.height/2);
+        const currentWidth = particle.x < restrictionPoint ? normalWidth : restrictedWidth;
+        const normalizedDistance = distanceFromCenter / (currentWidth/2);
+        const laminarProfile = Math.max(0, 1 - Math.pow(normalizedDistance, 2));
+        const baseSpeed = Math.max(Math.abs(flow)/5000, 0.1);
+
+        particle.speed = baseSpeed * velocityMultiplier * flowDirection * laminarProfile;
+
+        if (distanceFromCenter <= currentWidth/2) {
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'red';
+          ctx.fill();
+
+          particle.x += particle.speed;
+
+          if ((flowDirection > 0 && particle.x > canvas.width) || 
+              (flowDirection < 0 && particle.x < 0)) {
+            particle.x = flowDirection > 0 ? 0 : canvas.width;
+            particle.y = Math.random() * currentWidth + (canvas.height/2 - currentWidth/2);
+          }
+        } else {
+          particle.x = flowDirection > 0 ? 0 : canvas.width;
+          particle.y = Math.random() * normalWidth + (canvas.height/2 - normalWidth/2);
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
@@ -205,7 +192,7 @@ const BloodFlowSimulator = () => {
   
   const flowDirection = upstream >= downstream;
 
-  console.log('Pressure data:', getPressureData()); // Debug log
+
 
   return (
     <div className={`max-w-6xl mx-auto min-h-screen relative ${isMobile ? 'p-2' : 'p-4'} bg-gray-50`}>
