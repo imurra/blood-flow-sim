@@ -366,15 +366,30 @@ const BloodFlowSimulator = () => {
           <CardContent className="p-4">
             <div className="w-full h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={getPressureData()}>
+                <LineChart 
+                  data={getPressureData()}
+                  margin={{ top: 20, right: 30, left: 60, bottom: 60 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="position" 
-                    label={{ value: 'Position along vessel (%)', position: 'insideBottom', offset: -10 }}
+                    tick={{ fontSize: 12 }}
+                    label={{ 
+                      value: 'Position along vessel (%)', 
+                      position: 'insideBottom', 
+                      offset: -5,
+                      style: { textAnchor: 'middle', fontSize: '14px', fontWeight: 'bold' }
+                    }}
                   />
                   <YAxis 
                     domain={[0, 200]}
-                    label={{ value: 'Pressure (mmHg)', angle: -90, position: 'insideLeft' }}
+                    tick={{ fontSize: 12 }}
+                    label={{ 
+                      value: 'Pressure (mmHg)', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      style: { textAnchor: 'middle', fontSize: '14px', fontWeight: 'bold' }
+                    }}
                   />
                   <Line 
                     type="monotone" 
